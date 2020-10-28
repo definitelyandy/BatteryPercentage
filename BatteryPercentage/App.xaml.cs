@@ -26,7 +26,8 @@ namespace BatteryPercentage
     public partial class App : System.Windows.Application
     {
         private static int defaultIconDimension = 16;
-        private static Font defaultFont = new Font("Segoe UI", 8);
+        // TODO: Option in main window to decide between size 8 (small) or size 9 (bigger)
+        private static Font defaultFont = new Font("Segoe UI", 9);
 
         public static System.Windows.Forms.NotifyIcon nIcon = new System.Windows.Forms.NotifyIcon();
         public static int displayed_percent = 0;
@@ -134,21 +135,18 @@ namespace BatteryPercentage
 
             Bitmap bmp = new Bitmap(scaledIconDim, scaledIconDim);
 
-            // construct a rectangle with y offset of 1/16 of the icon so that the text will be centerd vertically
-            RectangleF rectf = new RectangleF(0, scaledIconDim/defaultIconDimension, scaledIconDim, scaledIconDim);
-
             Graphics g = Graphics.FromImage(bmp);
 
             if (lightMode)
             {  
                 // AntiAliasing only yields good results with light mode
-                g.TextRenderingHint = TextRenderingHint.AntiAlias; 
-                g.DrawString(text, defaultFont, System.Drawing.Brushes.Black, rectf); 
+                g.TextRenderingHint = TextRenderingHint.AntiAlias;
+                g.DrawString(text, defaultFont, System.Drawing.Brushes.Black, -1, 0); 
             }
             else
             {
-                g.TextRenderingHint = TextRenderingHint.SystemDefault; 
-                g.DrawString(text, defaultFont, System.Drawing.Brushes.White, rectf); 
+                g.TextRenderingHint = TextRenderingHint.SystemDefault;
+                g.DrawString(text, defaultFont, System.Drawing.Brushes.White, -1, 0);
             }
             
 
