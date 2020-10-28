@@ -30,6 +30,7 @@ namespace BatteryPercentage
 
         public static System.Windows.Forms.NotifyIcon nIcon = new System.Windows.Forms.NotifyIcon();
         public static int displayed_percent = 0;
+        public static bool systemLightMode = false;
         private System.Windows.Forms.ContextMenu iconMenu;
         private System.Windows.Forms.MenuItem menuItem1;
         private System.Threading.Timer t;
@@ -61,18 +62,18 @@ namespace BatteryPercentage
 
             // Initialize menuItem1
             this.menuItem1.Index = 0;
-            this.menuItem1.Text = "E&xit";
+            this.menuItem1.Text = "Exit";
             this.menuItem1.Click += new System.EventHandler(this.menuItem1_Click);
 
             nIcon.ContextMenu = this.iconMenu;
 
-            display_Icon(this);
-            t = new System.Threading.Timer(display_Icon, null, 0, 2000);
+            update_Icon(this);
+            t = new System.Threading.Timer(update_Icon, null, 0, 2000);
 
             nIcon.Click += nIcon_Click;   
         }
 
-        private static void display_Icon(Object stateInfo)
+        private static void update_Icon(Object stateInfo)
         {
             // read battery percentage
             PowerStatus status = SystemInformation.PowerStatus;
@@ -82,15 +83,22 @@ namespace BatteryPercentage
             if (percent > 99){
                 percent = 99;
             }
-            
-            if (percent != App.displayed_percent){
+            // Get System theme
+            Microsoft.Win32.RegistryKey registryKey =
+                    Microsoft.Win32.Registry.CurrentUser.OpenSubKey
+                        ("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize");
+
+            bool lightMode = Convert.ToBoolean(registryKey.GetValue("SystemUsesLightTheme"));
+
+            if (percent != App.displayed_percent | lightMode != App.systemLightMode){
                 // Get the bitmap.
-                Bitmap bm = text_to_bitmap(percent.ToString());
+                Bitmap bm = text_to_bitmap(percent.ToString(), lightMode);
 
                 // Convert to an icon and use for the form's icon.
                 nIcon.Icon = Icon.FromHandle(bm.GetHicon());
                 nIcon.Visible = true;
                 App.displayed_percent = percent;
+                App.systemLightMode = lightMode;
             }
             
         }
@@ -103,7 +111,12 @@ namespace BatteryPercentage
 
         void nIcon_Click(object sender, EventArgs e)
         {
-            MainWindow.Visibility = Visibility.Visible;
+            MouseEventArgs me = (MouseEventArgs) e;
+            if (me.Button == MouseButtons.Left)
+            {
+                MainWindow.Visibility = Visibility.Visible;
+            }
+            
         }
 
         public static double GetWindowsScaling()
@@ -115,7 +128,7 @@ namespace BatteryPercentage
         /// Draws text into bitmap of the right size for the taskbar.
         /// Tested on 1080p pannel with various scaling factors and resolution settings.
         /// </summary>
-        public static Bitmap text_to_bitmap(String text)
+        public static Bitmap text_to_bitmap(String text, bool lightMode)
         {
             int scaledIconDim = (int)(GetWindowsScaling() * defaultIconDimension);
 
@@ -126,12 +139,18 @@ namespace BatteryPercentage
 
             Graphics g = Graphics.FromImage(bmp);
 
-            // AntiAliasing didn't do me any good. code snippet left, because it was recommended
-            // on the interwebs. I don't want so search it up, if nedded at some point in the future.
-            //g.TextRenderingHint = TextRenderingHint.AntiAlias;
-
-            // todo: select brush according to taskbar theme
-            g.DrawString(text, defaultFont, System.Drawing.Brushes.White, rectf);
+            if (lightMode)
+            {  
+                // AntiAliasing only yields good results with light mode
+                g.TextRenderingHint = TextRenderingHint.AntiAlias; 
+                g.DrawString(text, defaultFont, System.Drawing.Brushes.Black, rectf); 
+            }
+            else
+            {
+                g.TextRenderingHint = TextRenderingHint.SystemDefault; 
+                g.DrawString(text, defaultFont, System.Drawing.Brushes.White, rectf); 
+            }
+            
 
             g.Flush();
 
