@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.Drawing.Text;
 using System.Windows.Media.Media3D;
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
 
 namespace BatteryPercentage
 {
@@ -28,8 +29,10 @@ namespace BatteryPercentage
         private static Font defaultFont = new Font("Segoe UI", 8);
 
         public static System.Windows.Forms.NotifyIcon nIcon = new System.Windows.Forms.NotifyIcon();
+        public static int displayed_percent = 0;
         private System.Windows.Forms.ContextMenu iconMenu;
         private System.Windows.Forms.MenuItem menuItem1;
+        private System.Threading.Timer t;
 
         /// <summary>
         /// Copies the binary to the users startup folder only if its name isn't already taken
@@ -64,7 +67,7 @@ namespace BatteryPercentage
             nIcon.ContextMenu = this.iconMenu;
 
             display_Icon(this);
-            System.Threading.Timer t = new System.Threading.Timer(display_Icon, null, 0, 60000);
+            t = new System.Threading.Timer(display_Icon, null, 0, 2000);
 
             nIcon.Click += nIcon_Click;   
         }
@@ -73,19 +76,23 @@ namespace BatteryPercentage
         {
             // read battery percentage
             PowerStatus status = SystemInformation.PowerStatus;
-            float percent = status.BatteryLifePercent * 100;
+            int percent = Convert.ToInt32(status.BatteryLifePercent * 100);
 
             //avoid displaying "100" since there is no space for the third digit
-            if (percent > 99)
-            {
+            if (percent > 99){
                 percent = 99;
             }
-            // Get the bitmap.
-            Bitmap bm = text_to_bitmap(percent.ToString());
+            
+            if (percent != App.displayed_percent){
+                // Get the bitmap.
+                Bitmap bm = text_to_bitmap(percent.ToString());
 
-            // Convert to an icon and use for the form's icon.
-            nIcon.Icon = Icon.FromHandle(bm.GetHicon());
-            nIcon.Visible = true;
+                // Convert to an icon and use for the form's icon.
+                nIcon.Icon = Icon.FromHandle(bm.GetHicon());
+                nIcon.Visible = true;
+                App.displayed_percent = percent;
+            }
+            
         }
 
         private void menuItem1_Click(object Sender, EventArgs e)
